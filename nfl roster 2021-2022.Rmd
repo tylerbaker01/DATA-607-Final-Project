@@ -1,0 +1,437 @@
+---
+title: "Data 607 Part 1"
+author: "Tyler Baker"
+date: "12/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(rvest)
+library(httr)
+library(jsonlite)
+library(data.table)
+```
+
+
+# Create a Table of Player's and their Colleges
+
+In order to complete my project I need to be able to compare nfl player stats and be able to compare each college.
+
+However, finding a table of this is a difficult task. Thus, I have decided to build my own. 
+
+To build a table of each current NFL player and their respective college I will scrape data from "Ourlads" for each NFL team. Then, I will combine all of these into one massive dataframe.
+
+#AFC
+
+## AFC East
+
+### Buffalo Bills
+
+```{r}
+bill_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/BUF"
+bills_page_scrape <- read_html(bill_url_scrape)
+bills_players_table <- html_nodes(bills_page_scrape, 'table')
+bills_players <- html_table(bills_players_table)[[1]]
+bills_players <- bills_players %>%
+  add_column(current_team = "Bills")
+```
+
+### Miami Dolphins
+
+```{r}
+dolphins_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/MIA"
+dolphins_page_scrape <- read_html(dolphins_url_scrape)
+dolphins_players_table <- html_nodes(dolphins_page_scrape, 'table')
+dolphins_players <- html_table(dolphins_players_table)[[1]]
+dolphins_players <- dolphins_players %>%
+  add_column(current_team = "Dolphins")
+```
+
+### New England Patriots
+
+```{r}
+patriots_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/NE"
+patriots_page_scrape <- read_html(patriots_url_scrape)
+patriots_players_table <- html_nodes(patriots_page_scrape, 'table')
+patriots_players <- html_table(patriots_players_table)[[1]]
+patriots_players <- patriots_players %>%
+  add_column(current_team = "Patriots")
+```
+
+### New York Jets
+
+```{r}
+jets_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/NYJ"
+jets_page_scrape <- read_html(jets_url_scrape)
+jets_players_table <- html_nodes(jets_page_scrape, 'table')
+jets_players <- html_table(jets_players_table)[[1]]
+jets_players <- jets_players %>%
+  add_column(current_team = "Jets")
+```
+
+## AFC North
+
+### Baltimore Ravens
+
+```{r}
+ravens_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/BAL"
+ravens_page_scrape <- read_html(ravens_url_scrape)
+ravens_players_table <- html_nodes(ravens_page_scrape, 'table')
+ravens_players <- html_table(ravens_players_table)[[1]]
+ravens_players <- ravens_players %>%
+  add_column(current_team = "Ravens")
+```
+
+### Cincinnati Bengals
+
+```{r}
+bengals_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/CIN"
+bengals_page_scrape <- read_html(bengals_url_scrape)
+bengals_players_table <- html_nodes(bengals_page_scrape, 'table')
+bengals_players <- html_table(bengals_players_table)[[1]]
+bengals_players <- bengals_players %>%
+  add_column(current_team = "Bengals")
+```
+
+### Cleveland Browns
+
+```{r}
+browns_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/CLE"
+browns_page_scrape <- read_html(browns_url_scrape)
+browns_players_table <- html_nodes(browns_page_scrape, 'table')
+browns_players <- html_table(browns_players_table)[[1]]
+browns_players <- browns_players %>%
+  add_column(current_team = "Browns")
+```
+
+### Pittsburgh Steelers
+
+```{r}
+steelers_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/PIT"
+steelers_page_scrape <- read_html(steelers_url_scrape)
+steelers_players_table <- html_nodes(steelers_page_scrape, 'table')
+steelers_players <- html_table(steelers_players_table)[[1]]
+steelers_players <- steelers_players %>%
+  add_column(current_team = "Steelers")
+```
+
+## AFC South
+
+### Houston Texans
+
+```{r}
+texans_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/HOU"
+texans_page_scrape <- read_html(texans_url_scrape)
+texans_players_table <- html_nodes(texans_page_scrape, 'table')
+texans_players <- html_table(texans_players_table)[[1]]
+texans_players <- texans_players %>%
+  add_column(current_team = "Texans")
+```
+
+### Indianapolis Colts
+
+```{r}
+colts_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/IND"
+colts_page_scrape <- read_html(colts_url_scrape)
+colts_players_table <- html_nodes(colts_page_scrape, 'table')
+colts_players <- html_table(colts_players_table)[[1]]
+colts_players <- colts_players %>%
+  add_column(current_team = "Colts")
+```
+
+### Jacksonville Jaguars
+
+```{r}
+jaguars_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/JAX"
+jaguars_page_scrape <- read_html(jaguars_url_scrape)
+jaguars_players_table <- html_nodes(jaguars_page_scrape, 'table')
+jaguars_players <- html_table(jaguars_players_table)[[1]]
+jaguars_players <- jaguars_players %>%
+  add_column(current_team = "Jaguars")
+```
+
+### Tennessee Titans
+
+```{r}
+titans_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/TEN"
+titans_page_scrape <- read_html(titans_url_scrape)
+titans_players_table <- html_nodes(titans_page_scrape, 'table')
+titans_players <- html_table(titans_players_table)[[1]]
+titans_players <- titans_players %>%
+  add_column(current_team = "Titans")
+```
+
+## AFC West
+
+### Denver Broncos
+
+```{r}
+broncos_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/DEN"
+broncos_page_scrape <- read_html(broncos_url_scrape)
+broncos_players_table <- html_nodes(broncos_page_scrape, 'table')
+broncos_players <- html_table(broncos_players_table)[[1]]
+broncos_players <- broncos_players %>%
+  add_column(current_team = "Broncos")
+```
+
+### Kansas City Chiefs
+
+```{r}
+chiefs_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/KC"
+chiefs_page_scrape <- read_html(chiefs_url_scrape)
+chiefs_players_table <- html_nodes(chiefs_page_scrape, 'table')
+chiefs_players <- html_table(chiefs_players_table)[[1]]
+chiefs_players <- chiefs_players %>%
+  add_column(current_team = "Chiefs")
+```
+
+### Las Vegas Raiders
+
+```{r}
+raiders_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/LV"
+raiders_page_scrape <- read_html(raiders_url_scrape)
+raiders_players_table <- html_nodes(raiders_page_scrape, 'table')
+raiders_players <- html_table(raiders_players_table)[[1]]
+raiders_players <- raiders_players %>%
+  add_column(current_team = "Raiders")
+```
+
+### Los Angeles Chargers
+
+```{r}
+chargers_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/LAC"
+chargers_page_scrape <- read_html(chargers_url_scrape)
+chargers_players_table <- html_nodes(chargers_page_scrape, 'table')
+chargers_players <- html_table(chargers_players_table)[[1]]
+chargers_players <- chargers_players %>%
+  add_column(current_team = "Chargers")
+```
+
+
+## AFC Roster
+
+```{r}
+afc_east_players <- rbind(bills_players, jets_players, patriots_players, dolphins_players)
+
+afc_north_players <- rbind(browns_players, steelers_players, ravens_players, bengals_players)
+
+afc_south_players <- rbind(texans_players, titans_players, colts_players, jaguars_players)
+
+afc_west_players <- rbind(chiefs_players, raiders_players, broncos_players, chargers_players)
+
+afc_players <- rbind(afc_east_players, afc_north_players, afc_south_players, afc_west_players)
+```
+
+# NFC
+
+## NFC East
+
+### New York Giants
+
+```{r}
+giants_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/NYG"
+giants_page_scrape <- read_html(giants_url_scrape)
+giants_players_table <- html_nodes(giants_page_scrape, 'table')
+giants_players <- html_table(giants_players_table)[[1]]
+giants_players <- giants_players %>%
+  add_column(current_team = "Giants")
+```
+
+### Dallas Cowboys
+
+```{r}
+cowboys_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/DAL"
+cowboys_page_scrape <- read_html(cowboys_url_scrape)
+cowboys_players_table <- html_nodes(cowboys_page_scrape, 'table')
+cowboys_players <- html_table(cowboys_players_table)[[1]]
+cowboys_players <- cowboys_players %>%
+  add_column(current_team = "Cowboys")
+```
+
+### Philadelphia Eagles
+
+```{r}
+eagles_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/PHI"
+eagles_page_scrape <- read_html(eagles_url_scrape)
+eagles_players_table <- html_nodes(eagles_page_scrape, 'table')
+eagles_players <- html_table(eagles_players_table)[[1]]
+eagles_players <- eagles_players %>%
+  add_column(current_team = "Eagles")
+```
+
+### Washington Football Team
+
+```{r}
+wft_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/WAS"
+wft_page_scrape <- read_html(wft_url_scrape)
+wft_players_table <- html_nodes(wft_page_scrape, 'table')
+wft_players <- html_table(wft_players_table)[[1]]
+wft_players <- wft_players %>%
+  add_column(current_team = "WFT")
+```
+
+## NFC North
+
+### Green Bay Packers
+
+```{r}
+packers_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/GB"
+packers_page_scrape <- read_html(packers_url_scrape)
+packers_players_table <- html_nodes(packers_page_scrape, 'table')
+packers_players <- html_table(packers_players_table)[[1]]
+packers_players <- packers_players %>%
+  add_column(current_team = "Packerss")
+```
+
+### Minnesota Vikings
+
+```{r}
+vikings_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/MIN"
+vikings_page_scrape <- read_html(vikings_url_scrape)
+vikings_players_table <- html_nodes(vikings_page_scrape, 'table')
+vikings_players <- html_table(vikings_players_table)[[1]]
+vikings_players <- vikings_players %>%
+  add_column(current_team = "Vikings")
+```
+
+### Detroit Lions
+
+```{r}
+lions_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/DET"
+lions_page_scrape <- read_html(lions_url_scrape)
+lions_players_table <- html_nodes(lions_page_scrape, 'table')
+lions_players <- html_table(lions_players_table)[[1]]
+lions_players <- lions_players %>%
+  add_column(current_team = "Lions")
+```
+
+### Chicago Bears
+
+```{r}
+bears_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/CHI"
+bears_page_scrape <- read_html(bears_url_scrape)
+bears_players_table <- html_nodes(bears_page_scrape, 'table')
+bears_players <- html_table(bears_players_table)[[1]]
+bears_players <- bears_players %>%
+  add_column(current_team = "Bears")
+```
+
+## NFC South
+
+### Carolina Panthers
+
+```{r}
+panthers_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/CAR"
+panthers_page_scrape <- read_html(panthers_url_scrape)
+panthers_players_table <- html_nodes(panthers_page_scrape, 'table')
+panthers_players <- html_table(panthers_players_table)[[1]]
+panthers_players <- panthers_players %>%
+  add_column(current_team = "Panthers")
+```
+
+### Atlanta Falcons
+
+```{r}
+falcons_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/ATL"
+falcons_page_scrape <- read_html(falcons_url_scrape)
+falcons_players_table <- html_nodes(falcons_page_scrape, 'table')
+falcons_players <- html_table(falcons_players_table)[[1]]
+falcons_players <- falcons_players %>%
+  add_column(current_team = "Falcons")
+```
+
+### Tampa Bay Bucs
+
+```{r}
+bucs_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/TB"
+bucs_page_scrape <- read_html(bucs_url_scrape)
+bucs_players_table <- html_nodes(bucs_page_scrape, 'table')
+bucs_players <- html_table(bucs_players_table)[[1]]
+bucs_players <- bucs_players %>%
+  add_column(current_team = "Bucs")
+```
+
+### New Orleans Saints
+
+```{r}
+saints_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/NO"
+saints_page_scrape <- read_html(saints_url_scrape)
+saints_players_table <- html_nodes(saints_page_scrape, 'table')
+saints_players <- html_table(saints_players_table)[[1]]
+saints_players <- saints_players %>%
+  add_column(current_team = "Saints")
+```
+
+## NFC West
+
+### Seattle Seahawks
+
+```{r}
+seahawks_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/SEA"
+seahawks_page_scrape <- read_html(seahawks_url_scrape)
+seahawks_players_table <- html_nodes(seahawks_page_scrape, 'table')
+seahawks_players <- html_table(seahawks_players_table)[[1]]
+seahawks_players <- seahawks_players %>%
+  add_column(current_team = "Seahawks")
+```
+
+### Los Angeles Rams
+
+```{r}
+rams_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/LAR"
+rams_page_scrape <- read_html(rams_url_scrape)
+rams_players_table <- html_nodes(rams_page_scrape, 'table')
+rams_players <- html_table(rams_players_table)[[1]]
+rams_players <- rams_players %>%
+  add_column(current_team = "Rams")
+```
+
+### San Fransisco 49'ers
+
+```{r}
+forty_niners_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/SF"
+forty_niners_page_scrape <- read_html(forty_niners_url_scrape)
+forty_niners_players_table <- html_nodes(forty_niners_page_scrape, 'table')
+forty_niners_players <- html_table(forty_niners_players_table)[[1]]
+forty_niners_players <- forty_niners_players %>%
+  add_column(current_team = "49ers")
+```
+
+### Arizona Cardinals
+
+```{r}
+cardinals_url_scrape <- "https://www.ourlads.com/nfldepthcharts/roster/ARZ"
+cardinals_page_scrape <- read_html(cardinals_url_scrape)
+cardinals_players_table <- html_nodes(cardinals_page_scrape, 'table')
+cardinals_players <- html_table(cardinals_players_table)[[1]]
+cardinals_players <- cardinals_players %>%
+  add_column(current_team = "Cardinals")
+```
+
+## NFC Roster
+
+```{r}
+nfc_east_players <- rbind(cowboys_players, wft_players, eagles_players, giants_players)
+
+nfc_north_players <- rbind(packers_players, vikings_players, lions_players, bears_players)
+
+nfc_south_players <- rbind(panthers_players, saints_players, falcons_players, bucs_players)
+
+nfc_west_players <- rbind(forty_niners_players, seahawks_players, cardinals_players, rams_players)
+
+nfc_players <- rbind(nfc_south_players, nfc_north_players, nfc_east_players, nfc_west_players)
+```
+
+## NFL Roster
+
+```{r}
+nfl_players <- rbind(afc_players, nfc_players)
+```
+
+# Convert to CSV
+
+```{r}
+write_csv(nfl_players, "C:\\Users\\tyler\\Downloads\\DATA 607.csv")
+```
