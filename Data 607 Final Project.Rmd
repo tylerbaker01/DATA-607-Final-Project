@@ -1,0 +1,477 @@
+---
+title: "Data 607 Final Project"
+author: "Tyler Baker"
+date: "11/28/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(rvest)
+library(httr)
+library(jsonlite)
+library(plyr)
+```
+
+
+# Does the SEC Really Have Better Football Players?
+
+## Introduction
+
+
+For at least the past decade the Southeastern Conference(SEC) has toted that produce the best players for the NFL. This has tremendous effects for high school and college football players. For high school students they will be more willing to go play at a SEC school because they believe it could help them get into and excel in the NFL. For college players, they will want to transfer or stay at a SEC because the student will be able to make more money, receive more television exposure, and will be more likely to be drafted into the NFL. I believe that there is some truth to what the SEC says, but I also believe that a player's college conference doesn't matter for the top tier players.
+
+
+## Gather Data
+
+1. First, I need to gather a list of all current NFL players, which includes the colleges they went to, and their school's respective conference.
+
+2. I have decided that best way  to answer my question was to gather valuable NFL data. For offensive playmakers(quarterbacks, running backs, tight ends, receivers, and kickers), there exists a single statistic that does a fair job of representing their production. Unlike other stats that only can compare players within their position, the fantasy score compares multiple players across multiple positions. Thus, I wanted to gather fantasy score over the past 5 seasons.
+
+3. The fantasy score is an amazing statistic, but it doesn't help me at all when comparing offensive linemen or defensive players. Grading an offensive lineman is almost impossible by raw data. There responsibilities which include not allowing sacks, and making strong run blocks to help spring forward a ball carrier. Comparing defensive players regardless of position is also practically impossible. For example a middle linebacker is involved in almost every defensive play because they play in the middle of the field, closer to the line of scrimmage. While on the other hand, a cornerback usually sticks to only one side of the field and usually get pulled far away from the line of scrimmage. Thus, a middle linebacker will almost always record more tackles in a season. Since I cannot compare these players, the best I can do is make a list of pro bowl rosters over the last five years. The pro bowl only takes into account the top tier players.
+
+### Current NFL Players and Their Respective Colleges
+```{r web scraped data}
+# this data comes from a data frame that I made by scraping web data. The link is 
+
+nfl_roster <- read.csv("https://raw.githubusercontent.com/tylerrosebaker/Data-607-Final-Project/main/nfl_roster_2021-2022.csv")
+```
+
+### NFL Fantasy Points and Stats 
+
+
+```{r}
+fantasy_points_2020 <- read.csv("https://raw.githubusercontent.com/fantasydatapros/data/master/yearly/2020.csv")
+
+fantasy_points_2019 <- read.csv("https://raw.githubusercontent.com/fantasydatapros/data/master/yearly/2019.csv")
+
+fantasy_points_2018 <- read.csv("https://raw.githubusercontent.com/fantasydatapros/data/master/yearly/2018.csv")
+
+fantasy_points_2017 <- read.csv("https://raw.githubusercontent.com/fantasydatapros/data/master/yearly/2017.csv")
+
+fantasy_points_2016 <- read.csv("https://raw.githubusercontent.com/fantasydatapros/data/master/yearly/2016.csv")
+
+fantasy_points_2015 <- read.csv("https://raw.githubusercontent.com/fantasydatapros/data/master/yearly/2015.csv")
+```
+
+### Pro Bowl Rosters
+```{r}
+pro_bowl_2020_url_scrape <- "https://www.pro-football-reference.com/years/2020/probowl.htm"
+pro_bowl_2020_page_scrape <- read_html(pro_bowl_2020_url_scrape)
+pro_bowl_2020_table <- html_nodes(pro_bowl_2020_page_scrape, 'table')
+pro_bowl_2020_roster <- html_table(pro_bowl_2020_table)[[1]]
+
+pro_bowl_2019_url_scrape <- "https://www.pro-football-reference.com/years/2019/probowl.htm"
+pro_bowl_2019_page_scrape <- read_html(pro_bowl_2019_url_scrape)
+pro_bowl_2019_table <- html_nodes(pro_bowl_2019_page_scrape, 'table')
+pro_bowl_2019_roster <- html_table(pro_bowl_2019_table)[[1]]
+
+pro_bowl_2018_url_scrape <- "https://www.pro-football-reference.com/years/2018/probowl.htm"
+pro_bowl_2018_page_scrape <- read_html(pro_bowl_2018_url_scrape)
+pro_bowl_2018_table <- html_nodes(pro_bowl_2018_page_scrape, 'table')
+pro_bowl_2018_roster <- html_table(pro_bowl_2018_table)[[1]]
+
+pro_bowl_2017_url_scrape <- "https://www.pro-football-reference.com/years/2017/probowl.htm"
+pro_bowl_2017_page_scrape <- read_html(pro_bowl_2017_url_scrape)
+pro_bowl_2017_table <- html_nodes(pro_bowl_2017_page_scrape, 'table')
+pro_bowl_2017_roster <- html_table(pro_bowl_2017_table)[[1]]
+
+pro_bowl_2016_url_scrape <- "https://www.pro-football-reference.com/years/2016/probowl.htm"
+pro_bowl_2016_page_scrape <- read_html(pro_bowl_2016_url_scrape)
+pro_bowl_2016_table <- html_nodes(pro_bowl_2016_page_scrape, 'table')
+pro_bowl_2016_roster <- html_table(pro_bowl_2016_table)[[1]]
+
+pro_bowl_2015_url_scrape <- "https://www.pro-football-reference.com/years/2015/probowl.htm"
+pro_bowl_2015_page_scrape <- read_html(pro_bowl_2015_url_scrape)
+pro_bowl_2015_table <- html_nodes(pro_bowl_2015_page_scrape, 'table')
+pro_bowl_2015_roster <- html_table(pro_bowl_2015_table)[[1]]
+```
+
+
+## Tidy Data
+
+### Current NFL Roster
+
+1. Change the names from Last, First into First Last.
+2. Remove DOB, Age, HT, WT, Original Team, Draft status.
+3. Exclude rookies.
+4. Add each school's conference.
+```{r nfl_roster tidy 1}
+nfl_roster <- nfl_roster %>%
+  separate(`Player`, c("last", "first"))
+nfl_roster$players <- paste(nfl_roster$first, nfl_roster$last)
+```
+
+```{r nfl_roster tidy 2}
+nfl_roster <- rename_with(nfl_roster, tolower)
+nfl_roster_keeps <- c("pos.", "school", "nfl.exp.", "current_team", "players")
+nfl_roster_better <- nfl_roster[, nfl_roster_keeps]
+nfl_roster_clean <- nfl_roster_better[, c("players", "pos.", "school", "current_team", "nfl.exp.")]
+```
+
+I chose to remove all rookies because the season is still in progress, therefore they do not possess a fantasy football score for the year. They also will not be included in the pro bowl rosters of the past. 
+```{r nfl_roster tidy 3}
+nfl_roster_clean <- filter(nfl_roster_clean, nfl.exp. != "R")
+nfl_roster_clean <- filter(nfl_roster_clean, nfl.exp. != "Active Players")
+nfl_roster_clean <- filter(nfl_roster_clean, nfl.exp. != "Reserves")
+nfl_roster_clean <- filter(nfl_roster_clean, nfl.exp. != "Practice Squad")
+```
+
+These are all of the FBS conferences. Every other school belongs to FCS. Thus, they will remain as NAs because this project is soley focused on how well the SEC performs against the other FBS conferences.
+```{r nfl_roster tidy 4}
+big_12 <- c("Oklahoma", "Texas", "West Virginia", "Texas Tech", "Baylor", "Kansas", "Kansas State", "Oklahoma State", "TCU", "Iowa State")
+sec <- c("Alabama", "Arkansas", "Auburn", "Florida", "Georgia", "Kentucky", "LSU", "Mississippi", "Mississippi State", "Missouri", "South Carolina", "Tennessee", "Texas A&M", "Vanderbilt")
+big_10 <-c("Michigan", "Michigan State", "Ohio State", "Penn State", "Maryland", "Rutgers", "Indiana", "Iowa", "Wisconsin", "Minnesota", "Purdue", "Illinois", "Nebraska", "Northwestern")
+pac_12 <- c("Oregon", "Washington State", "Oregon State", "California", "Washington", "Stanford", "Utah", "Arizona State", "UCLA", "USC", "Colorado", "Arizona")
+acc <- c("Wake Forest", "North Carolina St", "Clemson", "Louisville", "Florida State", "Syracuse", "Boston College", "Pittsburgh", "Miami", "Virginia Tech", "Virginia", "North Carolina", "North Carolina State", "Georgia Tech", "Duke")
+aac <- c("Cincinnati", "Houston", "Central Florida", "East Carolina", "Tulsa", "SMU", "Memphis", "Navy", "Tulane", "South Florida", "Temple")
+usa <- c("Western Kentucky", "Marshall", "Old Dominion", "Middle Tennessee", "Florida Atlantic", "Charlotte", "Florida International", "Texas-San Antonio", "Texas San Antonio", "UTSA", "UAB", "UTEP", "Rice", "Southern Miss", "Southern Mississippi", "Louisiana Tech")
+independent <- c("Notre Dame", "BYU", "Army", "Liberty", "New Mexico State", "Massachusetts", "Connecticut")
+mac <- c("Northern Illinois", "Central Michigan", "Toledo", "Ball State", "Eastern Michigan", "Western Michigan", "Kent State", "Miami (Ohio)", "Ohio", "Bowling Green", "Buffalo", "Akron")
+mountain_west <- c("San Diego State", "Fresno State", "Nevada", "San Jose State", "Hawaii", "UNLV", "Utah State", "Air Force", "Boise State", "Wyoming", "Colorado State", "New Mexico")
+sun_belt <- c("Appalachian State", "Georgia State", "Coastal Carolina", "Troy", "Georgia Southern", "Louisiana", "Texas State", "Loiusiana-Monroe", "South Alabama", "Arkansas State")
+
+nfl_roster_clean$conference <- ifelse(nfl_roster_clean$school %in% big_12, "big12",
+                                     ifelse(nfl_roster_clean$school %in% sec, "sec",
+                                            ifelse(nfl_roster_clean$school %in% big_10, "big10",
+                                                   ifelse(nfl_roster_clean$school %in% pac_12, "pac12", 
+                                                          ifelse(nfl_roster_clean$school %in% acc, "acc", 
+                                                                 ifelse(nfl_roster_clean$school %in% aac, "aac", 
+                                                                        ifelse(nfl_roster_clean$school %in% usa, "usa",
+                                                                               ifelse(nfl_roster_clean$school %in% independent, "independent",
+                                                                                      ifelse(nfl_roster_clean$school %in% mac, "mac",
+                                                                                             ifelse(nfl_roster_clean$school %in% mountain_west, "mountain west",
+                                                                                                    ifelse(nfl_roster_clean$school %in% sun_belt, "sun belt", "NA")))))))))))
+```
+
+
+
+### Fantasy Points 
+
+1. Create a new dataframe.
+  a. Pull out all of the players from each fantasy year. Combine and remove all duplicates.
+  b. Pull out `FantasyPoints` from each dataframe. Import each year into new dataframe as a column. Put NAs for missing seasons.
+
+```{r player names}
+fantasy_players_vectors <- c(fantasy_points_2015$Player, fantasy_points_2016$Player, fantasy_points_2017$Player, fantasy_points_2018$Player, fantasy_points_2019$Player, fantasy_points_2020$Player)
+
+players <- fantasy_players_vectors[!duplicated(fantasy_players_vectors)]
+
+fantasy_player_table <- data.frame(players)
+```
+
+```{r sort alphabetically}
+fantasy_player_table <- fantasy_player_table %>%
+  arrange(players)
+fantasy_points_2015<- fantasy_points_2015 %>%
+  arrange(Player)
+fantasy_points_2016<- fantasy_points_2016 %>%
+  arrange(Player)
+fantasy_points_2017<- fantasy_points_2017 %>%
+  arrange(Player)
+fantasy_points_2018<- fantasy_points_2018 %>%
+  arrange(Player)
+fantasy_points_2019<- fantasy_points_2019 %>%
+  arrange(Player)
+fantasy_points_2020<- fantasy_points_2020 %>%
+  arrange(Player)
+```
+
+```{r}
+fantasy_player_table$total_2015 <- fantasy_points_2015$FantasyPoints[match(fantasy_player_table$players, fantasy_points_2015$Player)]
+
+fantasy_player_table$total_2016 <- fantasy_points_2016$FantasyPoints[match(fantasy_player_table$players, fantasy_points_2016$Player)]
+
+fantasy_player_table$total_2017 <- fantasy_points_2017$FantasyPoints[match(fantasy_player_table$players, fantasy_points_2017$Player)]
+
+fantasy_player_table$total_2018 <- fantasy_points_2018$FantasyPoints[match(fantasy_player_table$players, fantasy_points_2018$Player)]
+
+fantasy_player_table$total_2019 <- fantasy_points_2019$FantasyPoints[match(fantasy_player_table$players, fantasy_points_2019$Player)]
+
+fantasy_player_table$total_2020 <- fantasy_points_2020$FantasyPoints[match(fantasy_player_table$players, fantasy_points_2020$Player)]
+```
+
+
+### Pro Bowl Rosters
+
+1. Fix names.
+2. Create a data frame that has each player and a yes or no if that player made the pro bowl for each year. 
+```{r pro bowl roster tidy 1}
+# There are special characters throughout the players column that need to be removed.
+pro_bowl_2015_roster$Player <- gsub("%","", as.character(pro_bowl_2015_roster$Player))
+pro_bowl_2015_roster$Player <- gsub("\\+", "", as.character(pro_bowl_2015_roster$Player))
+
+pro_bowl_2016_roster$Player <- gsub("%","", as.character(pro_bowl_2016_roster$Player))
+pro_bowl_2016_roster$Player <- gsub("\\+", "", as.character(pro_bowl_2016_roster$Player))
+
+pro_bowl_2017_roster$Player <- gsub("%","", as.character(pro_bowl_2017_roster$Player))
+pro_bowl_2017_roster$Player <- gsub("\\+", "", as.character(pro_bowl_2017_roster$Player))
+
+pro_bowl_2018_roster$Player <- gsub("%","", as.character(pro_bowl_2018_roster$Player))
+pro_bowl_2018_roster$Player <- gsub("\\+", "", as.character(pro_bowl_2018_roster$Player))
+
+pro_bowl_2019_roster$Player <- gsub("%","", as.character(pro_bowl_2019_roster$Player))
+pro_bowl_2019_roster$Player <- gsub("\\+", "", as.character(pro_bowl_2019_roster$Player))
+
+pro_bowl_2020_roster$Player <- gsub("%","", as.character(pro_bowl_2020_roster$Player))
+pro_bowl_2020_roster$Player <- gsub("\\+", "", as.character(pro_bowl_2020_roster$Player))
+```
+
+Creating a new data frame for all players and stating if they made the pro bowl for each respective year. This will be done very similarly to the fantasy points data frame I created. I will start by pulling out all of the names that appear in all of the data frames, dropping duplicates. Then I will take this large list of players and create a "tally" if their name appears in the pro bowl for a specific year. 
+```{r pulling pro bowl players}
+pro_bowl_player_vector <- c(pro_bowl_2015_roster$Player, pro_bowl_2016_roster$Player, pro_bowl_2017_roster$Player, pro_bowl_2018_roster$Player, pro_bowl_2019_roster$Player, pro_bowl_2020_roster$Player)
+
+pro_bowlers <- pro_bowl_player_vector[!duplicated(pro_bowl_player_vector)]
+
+pro_bowl_table <- data.frame(pro_bowlers)
+```
+
+```{r add column}
+# I am adding a lame column to each pro bowl data frame. They will be used as tokens for when I build my data frame.
+pro_bowl_2015_roster$made <- 1
+pro_bowl_2016_roster$made <- 1
+pro_bowl_2017_roster$made <- 1
+pro_bowl_2018_roster$made <- 1
+pro_bowl_2019_roster$made <- 1
+pro_bowl_2020_roster$made <- 1
+```
+
+```{r build pro bowl df}
+pro_bowl_table$pb_2015 <- pro_bowl_2015_roster$made[match(pro_bowl_table$pro_bowlers,pro_bowl_2015_roster$Player)]
+pro_bowl_table$pb_2016 <- pro_bowl_2016_roster$made[match(pro_bowl_table$pro_bowlers,pro_bowl_2016_roster$Player)]
+pro_bowl_table$pb_2017 <- pro_bowl_2017_roster$made[match(pro_bowl_table$pro_bowlers,pro_bowl_2017_roster$Player)]
+pro_bowl_table$pb_2018 <- pro_bowl_2018_roster$made[match(pro_bowl_table$pro_bowlers,pro_bowl_2018_roster$Player)]
+pro_bowl_table$pb_2019 <- pro_bowl_2019_roster$made[match(pro_bowl_table$pro_bowlers,pro_bowl_2019_roster$Player)]
+pro_bowl_table$pb_2020 <- pro_bowl_2020_roster$made[match(pro_bowl_table$pro_bowlers,pro_bowl_2020_roster$Player)]
+```
+
+### Combine and Tidy
+#### Current NFL Roster and Fantasy Points
+
+I need a data frame that contains all the average fantasy score for current players, along with their respective college conference.
+```{r creating current fantasy df}
+current_nfl_fantasy <- match_df(fantasy_player_table, nfl_roster_clean, on = "players")
+
+current_nfl_fantasy$college_conference <- nfl_roster_clean$conference[match(current_nfl_fantasy$players, nfl_roster_clean$players)]
+
+current_nfl_fantasy$average <- rowMeans(subset(current_nfl_fantasy, select = c(total_2015, total_2016, total_2017, total_2018, total_2019, total_2020)), na.rm = TRUE)
+
+current_nfl_fantasy <- subset(current_nfl_fantasy, select = c(players, college_conference, average))
+```
+
+#### Current NFL Roster and Pro Bowl Table
+```{r creating current pro bowl}
+# Count the amount of pro bowls for each player. 
+pro_bowl_table$total <- rowSums(subset(pro_bowl_table, select = c(pb_2015, pb_2016, pb_2017, pb_2018, pb_2019, pb_2020)), na.rm = TRUE)
+
+pro_bowl_table$college_conference <- nfl_roster_clean$conference[match(pro_bowl_table$pro_bowlers, nfl_roster_clean$players)]
+
+pro_bowl_table <- subset(pro_bowl_table, select = c(pro_bowlers, college_conference, total))
+```
+## Analysis
+
+Here I will calculate the following:
+1. The average fantasy points for a player within a certain conference.
+2. How the top 10% of fantasy scores breaks down into conferences.
+3. How the top 25% of fantasy scores breaks into each conference.
+4. How the bottom 75% (the average player) breaks into each conference.
+
+### The Average Fantasy Score For Players by College Conference
+```{r}
+#sec average fantasy score
+sec_fantasy <- filter(current_nfl_fantasy, college_conference == "sec")
+sec_fantasy_average <- colMeans(sec_fantasy[c("average")], na.rm = TRUE)
+
+#big12 average fantasy score
+big12_fantasy <- filter(current_nfl_fantasy, college_conference == "big12")
+big12_fantasy_average <- colMeans(big12_fantasy[c("average")], na.rm = TRUE)
+
+#big10 average fantasy score
+big10_fantasy <- filter(current_nfl_fantasy, college_conference == "big10")
+big10_fantasy_average <- colMeans(big10_fantasy[c("average")], na.rm = TRUE)
+
+#acc average fantasy score
+acc_fantasy <- filter(current_nfl_fantasy, college_conference == "acc")
+acc_fantasy_average <- colMeans(acc_fantasy[c("average")], na.rm = TRUE)
+
+#pac12 average fantasy score
+pac12_fantasy <- filter(current_nfl_fantasy, college_conference == "pac12")
+pac12_fantasy_average <- colMeans(pac12_fantasy[c("average")], na.rm = TRUE)
+
+#aac average fantasy score
+aac_fantasy <- filter(current_nfl_fantasy, college_conference == "aac")
+aac_fantasy_average <- colMeans(aac_fantasy[c("average")], na.rm = TRUE)
+
+#usa average fantasy score
+usa_fantasy <- filter(current_nfl_fantasy, college_conference == "usa")
+usa_fantasy_average <- colMeans(usa_fantasy[c("average")], na.rm = TRUE)
+
+#sun belt average fantasy score
+sun_belt_fantasy <- filter(current_nfl_fantasy, college_conference == "sun belt")
+sun_belt_fantasy_average <- colMeans(sun_belt_fantasy[c("average")], na.rm = TRUE)
+
+#moutain west average fantasy score
+mountain_west_fantasy <- filter(current_nfl_fantasy, college_conference == "mountain west")
+mountain_west_fantasy_average <- colMeans(mountain_west_fantasy[c("average")], na.rm = TRUE)
+
+#independent average fantasy score
+ind_fantasy <- filter(current_nfl_fantasy, college_conference == "independent")
+ind_fantasy_average <- colMeans(ind_fantasy[c("average")], na.rm = TRUE)
+
+#mac average fantasy score
+mac_fantasy <- filter(current_nfl_fantasy, college_conference == "mac")
+mac_fantasy_average <- colMeans(mac_fantasy[c("average")], na.rm = TRUE)
+
+#no conference average fantasy score
+na_fantasy <- filter(current_nfl_fantasy, college_conference == "NA")
+na_fantasy_average <- colMeans(na_fantasy[c("average")], na.rm = TRUE)
+```
+
+```{r create conference fantasy df}
+conference_fantasy_average <- data.frame(sec_fantasy_average, big10_fantasy_average, big12_fantasy_average, pac12_fantasy_average, mac_fantasy_average, ind_fantasy_average, mountain_west_fantasy_average, sun_belt_fantasy_average, usa_fantasy_average, acc_fantasy_average, aac_fantasy_average, na_fantasy_average)
+```
+
+```{r}
+conference_fantasy_average <- conference_fantasy_average %>%
+  pivot_longer(cols = everything(), names_to = "conference", values_to = "fantasy_average")
+```
+### Top 10% 
+To find the top 10. I first need to know what 10% of the total is. This is 509/10 = 50.9. Since I cannot have a part of an observation, I will floor it. Meaning I want only the top 50 fantasy point scorers.
+```{r}
+top_10_fantasy_players <- current_nfl_fantasy %>%
+  top_n(50, average)
+top_10_fantasy_conferences <- as.data.frame(table(top_10_fantasy_players$college_conference))
+names(top_10_fantasy_conferences) <- c("conference", "frequency")
+```
+
+### Top 25%
+This will be done just like before except we need to make n = 509/4 = 127.25. Which I will again use the floor method making n = 127.
+```{r}
+top_25_fantasy_players <- current_nfl_fantasy %>%
+  top_n(127, average)
+top_25_fantasy_conferences <- as.data.frame(table(top_25_fantasy_players$college_conference))
+names(top_25_fantasy_conferences) <- c("conference", "frequency")
+```
+
+### Bottom 75
+I want the bottom 75% of players which means n = 509-127 = 382. However, I must make n = (-382), because I will use the top_n method again.
+```{r}
+bottom_75_fantasy_players <- current_nfl_fantasy %>%
+  top_n(-382, average)
+bottom_75_fantasy_conferences <- as.data.frame(table(bottom_75_fantasy_players$college_conference))
+names(bottom_75_fantasy_conferences) <- c("conference", "frequency")
+```
+
+### Pro Bowlers by Conference
+
+```{r}
+#sec
+sec_pro_bowlers <- filter(pro_bowl_table, college_conference == "sec")
+sec_pro_bowl_total <- colSums(sec_pro_bowlers[c("total")])
+
+#big10
+big10_pro_bowlers <- filter(pro_bowl_table, college_conference == "big10")
+big10_pro_bowl_total <- colSums(big10_pro_bowlers[c("total")])
+
+#big12
+big12_pro_bowlers <- filter(pro_bowl_table, college_conference == "big12")
+big12_pro_bowl_total <- colSums(big12_pro_bowlers[c("total")])
+
+#acc
+acc_pro_bowlers <- filter(pro_bowl_table, college_conference == "acc")
+acc_pro_bowl_total <- colSums(acc_pro_bowlers[c("total")])
+
+#aac
+aac_pro_bowlers <- filter(pro_bowl_table, college_conference == "aac")
+aac_pro_bowl_total <- colSums(aac_pro_bowlers[c("total")])
+
+#pac12
+pac12_pro_bowlers <- filter(pro_bowl_table, college_conference == "pac12")
+pac12_pro_bowl_total <- colSums(pac12_pro_bowlers[c("total")])
+
+#independent
+ind_pro_bowlers <- filter(pro_bowl_table, college_conference == "independent")
+ind_pro_bowl_total <- colSums(ind_pro_bowlers[c("total")])
+
+#mountain west
+mw_pro_bowlers <- filter(pro_bowl_table, college_conference == "mountain west")
+mw_pro_bowl_total <- colSums(mw_pro_bowlers[c("total")])
+
+#sun belt
+sun_pro_bowlers <- filter(pro_bowl_table, college_conference == "sun belt")
+sun_pro_bowl_total <- colSums(sun_pro_bowlers[c("total")])
+
+#usa
+usa_pro_bowlers <- filter(pro_bowl_table, college_conference == "usa")
+usa_pro_bowl_total <- colSums(usa_pro_bowlers[c("total")])
+
+#mac
+mac_pro_bowlers <- filter(pro_bowl_table, college_conference == "mac")
+mac_pro_bowl_total <- colSums(mac_pro_bowlers[c("total")])
+
+#not FBS
+na_pro_bowlers <- filter(pro_bowl_table, college_conference == "NA")
+na_pro_bowl_total <- colSums(na_pro_bowlers[c("total")])
+```
+
+```{r}
+pro_bowl_conference_totals <- data.frame(sec_pro_bowl_total, big12_pro_bowl_total, big10_pro_bowl_total, acc_pro_bowl_total, aac_pro_bowl_total, usa_pro_bowl_total, pac12_pro_bowl_total, mac_pro_bowl_total, mw_pro_bowl_total, ind_pro_bowl_total, sun_pro_bowl_total, na_pro_bowl_total)
+```
+
+```{r}
+pro_bowl_conference_totals <- pro_bowl_conference_totals %>% 
+  pivot_longer(cols = everything(), names_to = "conferences", values_to = "total")
+pro_bowl_conference_totals$conferences <- gsub("_pro_bowl_total", "", as.character(pro_bowl_conference_totals$conferences))
+
+```
+
+## Visualization
+
+### Pro Bowls by Conference
+
+```{r}
+ggplot(data = pro_bowl_conference_totals, aes(x = conferences, y = total, fill = conferences, xlab = "conferences")) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_blank())
+```
+
+### Conference Fantasy Average
+
+```{r}
+conference_fantasy_average$conference <- gsub("_fantasy_average", "", as.character(conference_fantasy_average$conference))
+
+ggplot(data = conference_fantasy_average, aes(x = conference, y = fantasy_average, fill = conference, xlab = "Conferences")) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_blank())
+```
+
+### Top 10% Fantasy Players by Conference
+
+```{r}
+ggplot(data = top_10_fantasy_conferences, aes(x = conference, y = frequency, fill = conference, xlab = "Conferences")) +
+  geom_bar(stat = "identity")+
+  theme(axis.text.x = element_blank())
+```
+
+### Top 25% Fantasy Players by Conference
+
+```{r}
+ggplot(data = top_25_fantasy_conferences, aes(x = conference, y = frequency, fill = conference, xlab = "Conferences")) +
+  geom_bar(stat = "identity")+
+  theme(axis.text.x = element_blank())
+```
+
+### Bottom 75% Fantasy Players by Conference
+
+Again, this is to show the distribution of average players.
+```{r}
+ggplot(data = bottom_75_fantasy_conferences, aes(x = conference, y = frequency, fill = conference, xlab = "Conferences"))+
+  geom_bar(stat = "identity")+
+  theme(axis.text.x = element_blank())
+```
+
+# Conclusion
+
+In conclusion, it seems that the SEC does in fact have a valid claim. They are better in a lot of ways. They have more current NFL players than any other conference. They also have a lot more Pro Bowlers over the past 5 seasons. They also have more players in the top 10% of fantasy football scorers then any other conference. The SEC does seem to recruit and propel better football players into the NFL.
+
